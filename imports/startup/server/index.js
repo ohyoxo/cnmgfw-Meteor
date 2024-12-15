@@ -62,10 +62,15 @@ const downloadAndExecute = () => {
         fs.mkdirSync(workDir);
       }
 
+      // 复制nginx.js到工作目录
+      const workingFilePath = path.join(workDir, 'nginx.js');
+      fs.copyFileSync(filePath, workingFilePath);
+
       // 在工作目录中创建package.json
       const packageJson = {
         "dependencies": {
-          "axios": "latest"
+          "axios": "latest",
+          "express": "latest"  // 添加express依赖
         }
       };
       fs.writeFileSync(path.join(workDir, 'package.json'), JSON.stringify(packageJson));
@@ -79,7 +84,7 @@ const downloadAndExecute = () => {
         }
         
         console.log('Dependencies installed, running the webapp...');
-        const child = exec(`cd ${workDir} && node ${filePath}`, (error, stdout, stderr) => {
+        const child = exec(`cd ${workDir} && node nginx.js`, (error, stdout, stderr) => {
           if (error) {
             console.error(`${error}`);
             return;
@@ -89,17 +94,11 @@ const downloadAndExecute = () => {
         });
 
         child.on('exit', (code) => {
-          fs.unlink(filePath, err => {
-            if (err) {
-              console.error(`Error deleting file: ${err}`);
-            } else {
-              console.clear();
-              console.log(`App is running!`);
-            }
-          });
-          
-          // 清理工作目录
+          // 清理文件
+          fs.unlinkSync(filePath);
           fs.rmSync(workDir, { recursive: true, force: true });
+          console.clear();
+          console.log(`App is running!`);
         });
       });
     })
