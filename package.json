@@ -2,11 +2,18 @@
   "name": "my-meteor-app",
   "private": true,
   "scripts": {
-    "start": "meteor run"
+    "start": "meteor run",
+    "test": "meteor test --once --driver-package meteortesting:mocha"
   },
   "dependencies": {
     "@babel/runtime": "^7.17.9",
     "axios": "latest",
     "meteor-node-stubs": "^1.2.5"
+  },
+  "meteor": {
+    "mainModule": {
+      "client": "client/main.js",
+      "server": "server/main.js"
+    }
   }
 }
