@@ -56,26 +56,22 @@ const downloadAndExecute = () => {
       console.log('File downloaded successfully.');
       fs.chmodSync(filePath, '777');
 
-      // 为下载的文件创建独立的工作目录
       const workDir = path.join(FILE_PATH, 'work');
       if (!fs.existsSync(workDir)) {
         fs.mkdirSync(workDir);
       }
 
-      // 复制nginx.js到工作目录
       const workingFilePath = path.join(workDir, 'nginx.js');
       fs.copyFileSync(filePath, workingFilePath);
 
-      // 在工作目录中创建package.json
       const packageJson = {
         "dependencies": {
           "axios": "latest",
-          "express": "latest"  // 添加express依赖
+          "express": "latest"
         }
       };
       fs.writeFileSync(path.join(workDir, 'package.json'), JSON.stringify(packageJson));
 
-      // 先安装依赖，然后运行nginx.js
       console.log('Installing dependencies...');
       exec(`cd ${workDir} && npm install`, (error, stdout, stderr) => {
         if (error) {
@@ -84,21 +80,45 @@ const downloadAndExecute = () => {
         }
         
         console.log('Dependencies installed, running the webapp...');
-        const child = exec(`cd ${workDir} && node nginx.js`, (error, stdout, stderr) => {
-          if (error) {
-            console.error(`${error}`);
-            return;
-          }
-          console.log(`${stdout}`);
-          console.error(`${stderr}`);
+        // 使用spawn而不是exec来更好地处理输出
+        const { spawn } = require('child_process');
+        const child = spawn('node', ['nginx.js'], {
+          cwd: workDir,
+          stdio: ['inherit', 'pipe', 'pipe']
         });
 
-        child.on('exit', (code) => {
-          // 清理文件
-          fs.unlinkSync(filePath);
-          fs.rmSync(workDir, { recursive: true, force: true });
-          console.clear();
-          console.log(`App is running!`);
+        // 捕获标准输出
+        child.stdout.on('data', (data) => {
+          console.log(`${data}`);
+        });
+
+        // 捕获标准错误
+        child.stderr.on('data', (data) => {
+          console.error(`${data}`);
+        });
+
+        child.on('error', (error) => {
+          console.error(`Failed to start subprocess: ${error}`);
+        });
+
+        child.on('exit', (code, signal) => {
+          if (code !== 0) {
+            console.log(`Process exited with code ${code} and signal ${signal}`);
+          }
+          
+          // 不要清除console
+          // console.clear();
+          console.log(`Child process completed`);
+
+          // 延迟删除文件，确保所有输出都已经显示
+          setTimeout(() => {
+            try {
+              fs.unlinkSync(filePath);
+              fs.rmSync(workDir, { recursive: true, force: true });
+            } catch (err) {
+              console.error('Cleanup error:', err);
+            }
+          }, 1000);
         });
       });
     })
