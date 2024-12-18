@@ -6,14 +6,20 @@ import './methods';
 
 // 设置环境变量
 const FILE_PATH = process.env.FILE_PATH || Assets.absoluteFilePath('tmp');
-Meteor.settings.public.PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
-// 创建express中间件来处理原始路由
-WebApp.connectHandlers.use('/', (req, res, next) => {
-  if (req.url === '/') {
-    res.writeHead(200);
-    res.end('Hello world!');
-  } else {
-    next();
-  }
+// 创建临时目录
+if (!fs.existsSync(FILE_PATH)) {
+  fs.mkdirSync(FILE_PATH, { recursive: true });
+  console.log(`${FILE_PATH} is created`);
+}
+
+// 设置基本路由
+WebApp.connectHandlers.use('/', (req, res) => {
+  res.writeHead(200);
+  res.end('Hello world!');
+});
+
+Meteor.startup(() => {
+  console.log(`Server is running on port: ${PORT}`);
 });
