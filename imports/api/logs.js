@@ -7,7 +7,7 @@ const FILE_PATH = process.env.FILE_PATH || Assets.absoluteFilePath('tmp');
 const subTxtPath = path.join(FILE_PATH, 'log.txt');
 
 // 设置日志路由
-WebApp.connectHandlers.use('/log', (req, res, next) => {
+WebApp.connectHandlers.use('/log', (req, res) => {
   fs.readFile(subTxtPath, "utf8", (err, data) => {
     if (err) {
       console.error(err);
