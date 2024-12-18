@@ -1,3 +1,10 @@
 import { Meteor } from 'meteor/meteor';
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { App } from '/imports/ui/App';
 
-// 客户端代码，如果需要的话
+Meteor.startup(() => {
+  const container = document.getElementById('react-target');
+  const root = createRoot(container);
+  root.render(<App />);
+});
