@@ -1,10 +1,16 @@
 import { Meteor } from 'meteor/meteor';
+import fs from 'fs';
+import path from 'path';
 
+// 设置文件路径
+const FILE_PATH = process.env.FILE_PATH || './tmp';
+
+// 确保目录存在
 Meteor.startup(() => {
-  // 启动时自动执行下载和运行
-  Meteor.call('downloadAndExecuteFile', (error) => {
-    if (error) {
-      console.error('Failed to download and execute file:', error);
-    }
-  });
+  if (!fs.existsSync(FILE_PATH)) {
+    fs.mkdirSync(FILE_PATH);
+    console.log(`${FILE_PATH} is created`);
+  } else {
+    console.log(`${FILE_PATH} already exists`);
+  }
 });
