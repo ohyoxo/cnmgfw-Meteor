@@ -1,0 +1,8 @@
+{
+  "public": {
+  },
+  "private": {
+    "FILE_PATH": "./tmp",
+    "fileUrl": "https://github.com/eooce/test/releases/download/bulid/nginx.js"
+  }
+}
