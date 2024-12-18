@@ -1,9 +1,16 @@
 import { Meteor } from 'meteor/meteor';
 import { WebApp } from 'meteor/webapp';
-import '../imports/startup/server';
-import '../imports/api/methods';
+import '../imports/api/logs';
+import '../imports/startup/server/file-handler';
 
 Meteor.startup(() => {
-  // 服务器启动时的初始化代码
-  console.log(`Server is running on port: ${process.env.PORT || 3000}`);
+  // 设置基础路由
+  WebApp.rawConnectHandlers.use('/', (req, res, next) => {
+    if (req.url === '/') {
+      res.writeHead(200, {'Content-Type': 'text/plain'});
+      res.end('Hello world!');
+    } else {
+      next();
+    }
+  });
 });
